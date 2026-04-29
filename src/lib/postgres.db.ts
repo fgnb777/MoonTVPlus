@@ -2796,9 +2796,6 @@ export class PostgresStorage implements IStorage {
         'book_shelf',
         'book_read_records',
         'skip_configs',
-        'music_play_records',
-        'music_playlists',
-        'music_playlist_songs',
         'music_v2_history',
         'music_v2_playlists',
         'music_v2_playlist_items',
@@ -2811,7 +2808,16 @@ export class PostgresStorage implements IStorage {
       ];
 
       for (const table of tables) {
-        await this.db.prepare(`DELETE FROM ${table}`).run();
+        try {
+          await this.db.prepare(`DELETE FROM ${table}`).run();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          if (message.includes('no such table') || message.includes('does not exist')) {
+            console.warn('PostgresStorage.clearAllData warning:', table, message);
+            continue;
+          }
+          throw err;
+        }
       }
     } catch (err) {
       console.error('PostgresStorage.clearAllData error:', err);
